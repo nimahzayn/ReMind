@@ -10,6 +10,7 @@
   "license": "ISC",
   "description": "",
   "dependencies": {
+    "leaflet": "^1.9.4",
     "react-router-dom": "^7.13.0"
   }
 }

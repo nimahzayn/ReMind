@@ -26,6 +26,9 @@ app.use((req, res, next) => {
   next();
 });
 
+// Import models
+const SafeZone = require("./models/SafeZone");
+
 // Routes
 const authRoutes = require("./routes/authRoutes");
 const locationRoutes = require("./routes/locationRoutes");
@@ -33,6 +36,43 @@ const locationRoutes = require("./routes/locationRoutes");
 app.use("/api/auth", authRoutes);
 app.use("/api/location", locationRoutes);
 
+// SafeZone Routes
+app.get("/api/safezone/:patientId", async (req, res) => {
+  try {
+    const safeZone = await SafeZone.findOne({ patientId: req.params.patientId });
+    if (!safeZone) return res.status(404).json({ message: "No safe zone found" });
+    res.json(safeZone);
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+app.post("/api/safezone", async (req, res) => {
+  try {
+    const { patientId, centerLat, centerLng, radius } = req.body;
+    let safeZone = await SafeZone.findOne({ patientId });
+    
+    if (safeZone) {
+      safeZone.latitude = centerLat;
+      safeZone.longitude = centerLng;
+      safeZone.radiusMeters = radius;
+    } else {
+      safeZone = new SafeZone({
+        patientId,
+        latitude: centerLat,
+        longitude: centerLng,
+        radiusMeters: radius,
+      });
+    }
+    
+    await safeZone.save();
+    res.json({ message: "Safe zone saved", safeZone });
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+// ...existing code...
 // Track connected caregivers: { caregiverId: socketId }
 const connectedCaregivers = {};
 
