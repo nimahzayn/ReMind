@@ -15,10 +15,9 @@ export default function LiveLocation() {
   const user = getUser();
 
   useEffect(() => {
-    // Check if already linked
     if (user?.linkedPatient) {
       setLinked(true);
-      loadMap();
+      initMap();
     } else {
       setLoading(false);
     }
@@ -26,13 +25,12 @@ export default function LiveLocation() {
 
   useEffect(() => {
     if (!linked) return;
-    // Poll patient location every 5 seconds
     const interval = setInterval(async () => {
       try {
         const loc = await getPatientLocation();
         setLocation(loc);
         setError("");
-        if (markerRef.current) {
+        if (markerRef.current && mapInstanceRef.current) {
           markerRef.current.setLatLng([loc.latitude, loc.longitude]);
           mapInstanceRef.current.setView([loc.latitude, loc.longitude]);
         }
@@ -43,27 +41,13 @@ export default function LiveLocation() {
     return () => clearInterval(interval);
   }, [linked]);
 
-  const loadMap = () => {
-   
-      
-
-    if (!document.getElementById("leaflet-js")) {
-      const script = document.createElement("script");
-      script.id = "leaflet-js";
-      script.src = "https://unpkg.com/leaflet@1.9.4/dist/leaflet.js";
-      script.onload = () => initMap();
-      document.head.appendChild(script);
-    } else {
-      initMap();
-    }
-  };
-
   const initMap = async () => {
-    if (!mapRef.current || mapInstanceRef.current) return;
     try {
       const loc = await getPatientLocation();
       setLocation(loc);
       setLoading(false);
+
+      if (mapInstanceRef.current) return;
 
       const L = window.L;
       const map = L.map(mapRef.current).setView([loc.latitude, loc.longitude], 15);
@@ -83,6 +67,7 @@ export default function LiveLocation() {
         .addTo(map)
         .bindPopup("📍 Patient Location")
         .openPopup();
+
     } catch (err) {
       setError(err.message);
       setLoading(false);
@@ -98,11 +83,10 @@ export default function LiveLocation() {
     setLinkError("");
     try {
       await linkPatient(code);
-      // Update user in localStorage
       const updatedUser = { ...user, linkedPatient: true };
       localStorage.setItem("user", JSON.stringify(updatedUser));
       setLinked(true);
-      loadMap();
+      initMap();
     } catch (err) {
       setLinkError(err.message);
     } finally {
@@ -115,11 +99,12 @@ export default function LiveLocation() {
       <h2 style={styles.title}>📍 Patient Live Location</h2>
       <p style={styles.sub}>Real-time location of your linked patient.</p>
 
-      {/* Link Patient */}
       {!linked && (
         <div style={styles.linkBox}>
           <p style={styles.linkTitle}>🔗 Link Your Patient</p>
-          <p style={styles.linkHint}>Ask your patient for their 6-digit code and enter it below.</p>
+          <p style={styles.linkHint}>
+            Ask your patient for their 6-digit code and enter it below.
+          </p>
           <div style={styles.linkRow}>
             <input
               type="text"
@@ -141,10 +126,11 @@ export default function LiveLocation() {
         </div>
       )}
 
-      {/* Linked and showing location */}
       {linked && (
         <>
-          {loading && <div style={styles.loadingBox}>⏳ Getting patient location...</div>}
+          {loading && (
+            <div style={styles.loadingBox}>⏳ Getting patient location...</div>
+          )}
           {error && <div style={styles.errorBox}>{error}</div>}
           {location && (
             <div style={styles.infoBox}>

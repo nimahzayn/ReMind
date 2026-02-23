@@ -28,7 +28,7 @@ export default function SafeZone() {
 
   // Real-time socket alert
   useEffect(() => {
-    const socket = io("http://localhost:5000");
+    const socket = io("http://10.10.168.224:5000");
     socket.on("alert", (data) => {
       setAlert(`🚨 REAL-TIME ALERT! Patient is ${Math.round(data.distanceMetres)}m outside the safe zone!`);
     });
@@ -67,7 +67,6 @@ export default function SafeZone() {
     }
   }, [patientLocation, center, radius]);
 
-  // Haversine formula
   const getDistance = (lat1, lng1, lat2, lng2) => {
     const R = 6371000;
     const dLat = ((lat2 - lat1) * Math.PI) / 180;
@@ -98,7 +97,6 @@ export default function SafeZone() {
         attribution: "© OpenStreetMap contributors",
       }).addTo(map);
 
-      // Safe zone circle
       circleRef.current = L.circle([loc.latitude, loc.longitude], {
         radius: radius,
         color: "#3B82F6",
@@ -107,7 +105,6 @@ export default function SafeZone() {
         weight: 2,
       }).addTo(map);
 
-      // Patient marker
       const patientIcon = L.divIcon({
         html: `<div style="background:#EF4444;width:20px;height:20px;border-radius:50%;border:3px solid white;box-shadow:0 2px 8px rgba(0,0,0,0.3)"></div>`,
         iconSize: [20, 20],
@@ -119,7 +116,6 @@ export default function SafeZone() {
         .bindPopup("🧡 Patient Location")
         .openPopup();
 
-      // Click map to move safe zone center
       map.on("click", (e) => {
         const { lat, lng } = e.latlng;
         setCenter({ lat, lng });
@@ -142,7 +138,7 @@ export default function SafeZone() {
   const handleSave = async () => {
     try {
       const token = getToken();
-      const response = await fetch("http://localhost:5000/api/safezone", {
+      const response = await fetch("http://10.10.168.224:5000/api/safezone", {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
@@ -155,7 +151,6 @@ export default function SafeZone() {
           radius: radius,
         }),
       });
-
       if (response.ok) {
         setSaved(true);
       }
@@ -182,17 +177,14 @@ export default function SafeZone() {
         Click anywhere on the map to move the safe zone center. Use the slider to adjust radius.
       </p>
 
-      {/* Alert */}
       {alert && <div style={styles.alertBox}>{alert}</div>}
 
-      {/* Safe */}
       {!alert && saved && (
         <div style={styles.successBox}>
           ✅ Patient is inside the safe zone. ({distance}m away from center)
         </div>
       )}
 
-      {/* Distance */}
       {distance !== null && (
         <div style={styles.distanceBox}>
           📏 Patient is <strong>{distance}m</strong> from center. Radius: <strong>{radius}m</strong>.
@@ -203,7 +195,6 @@ export default function SafeZone() {
         </div>
       )}
 
-      {/* Controls */}
       <div style={styles.controls}>
         <div style={styles.controlItem}>
           <label style={styles.label}>Radius: <strong>{radius}m</strong></label>

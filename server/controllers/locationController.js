@@ -7,14 +7,16 @@ const { getZoneStatus } = require("../utils/haversine");
 const updateLocation = async (req, res) => {
   const { latitude, longitude } = req.body;
   try {
+    const patientId = req.user._id;
+    
     await Location.findOneAndUpdate(
-      { patientId: req.user._id },
-      { patientId: req.user._id, latitude, longitude },
+      { patientId },
+      { patientId, latitude, longitude },
       { upsert: true, new: true }
     );
 
-    // Check safe zone using friend's field names
-    const safeZone = await SafeZone.findOne({ patientId: req.user._id });
+    // Check safe zone
+    const safeZone = await SafeZone.findOne({ patientId });
     if (safeZone) {
       const { status, distanceMetres } = getZoneStatus(
         latitude, longitude, {
@@ -24,16 +26,26 @@ const updateLocation = async (req, res) => {
         }
       );
 
-      // Emit real-time alert if outside
+      // Emit alert ONLY to the caregiver linked to this patient
       if (status === "OUTSIDE") {
-        req.io.emit("alert", {
-          patientId: req.user._id,
-          status,
-          distanceMetres,
-          latitude,
-          longitude,
-          message: `Patient is ${Math.round(distanceMetres)}m outside the safe zone!`,
-        });
+        const caregiver = await User.findOne({ linkedPatient: patientId });
+        if (caregiver && req.io) {
+          const connectedCaregivers = req.app.locals.connectedCaregivers;
+          const caregiverSocketId = connectedCaregivers[caregiver._id.toString()];
+          
+          if (caregiverSocketId) {
+            req.io.to(caregiverSocketId).emit("alert", {
+              patientId,
+              status,
+              distanceMetres,
+              latitude,
+              longitude,
+              message: `🚨 ALERT! Patient is ${Math.round(distanceMetres)}m outside the safe zone!`,
+              timestamp: new Date(),
+            });
+            console.log(`📬 Alert sent to caregiver ${caregiver._id}`);
+          }
+        }
       }
     }
 

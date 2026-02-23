@@ -1,5 +1,5 @@
-const API_URL = "http://localhost:5000/api/auth";
-const LOC_URL = "http://localhost:5000/api/location";
+const API_URL = "http://10.10.168.224:5000/api/auth";
+const LOC_URL = "http://10.10.168.224:5000/api/location";
 
 export const loginUser = async (username, password, role) => {
   const response = await fetch(`${API_URL}/login`, {
@@ -35,7 +35,6 @@ export const logoutUser = () => {
 export const getUser = () => JSON.parse(localStorage.getItem("user"));
 export const getToken = () => localStorage.getItem("token");
 
-// Update patient location
 export const updateLocation = async (latitude, longitude) => {
   const token = getToken();
   await fetch(`${LOC_URL}/update`, {
@@ -48,7 +47,6 @@ export const updateLocation = async (latitude, longitude) => {
   });
 };
 
-// Get patient location (for caregiver)
 export const getPatientLocation = async () => {
   const token = getToken();
   const response = await fetch(`${LOC_URL}/patient`, {
@@ -59,7 +57,6 @@ export const getPatientLocation = async () => {
   return data;
 };
 
-// Link patient by code (for caregiver)
 export const linkPatient = async (code) => {
   const token = getToken();
   const response = await fetch(`${LOC_URL}/link`, {
